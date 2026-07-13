@@ -45,7 +45,7 @@ export default function Dashboard() {
           {user?.signatureUrl ? (
             <div className="relative group cursor-pointer">
               <img
-                src={`${import.meta.env.VITE_API_URL}${user.signatureUrl}`}
+                src={`${import.meta.env.VITE_BACKEND_URL}${user.signatureUrl}`}
                 alt="Signature"
                 className="h-16 w-auto object-contain"
               />
