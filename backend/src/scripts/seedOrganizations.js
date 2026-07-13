@@ -9,7 +9,8 @@ const ORGS = [
     { organizationName: "IIT Bombay", issuerCode: "IIT-B" },
     { organizationName: "Tech Mahindra", issuerCode: "TECH-M" },
     { organizationName: "Infosys Training", issuerCode: "INF-TR" },
-    { organizationName: "Grand Valley University", issuerCode: "GVU-USA" } // For fun/completeness
+    { organizationName: "Grand Valley University", issuerCode: "GVU-USA" },
+    { organizationName: "Tech Inc", issuerCode: "TECH-1234" }
 ];
 
 const seed = async () => {
