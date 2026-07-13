@@ -39,16 +39,23 @@ app.use('/api/purchase', require('./routes/purchase'));
 // Templates route (KEEP only one)
 app.use('/api/templates', require('./routes/templates'));
 
-// Connect to DB
+// Connect to DB and run seeds
 async function connectDB() {
   try {
-    await mongoose.connect(process.env.MONGO_URI, { 
-      useNewUrlParser: true, 
-      useUnifiedTopology: true 
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
     });
-    console.log('MongoDB connected');
+    console.log('✅ MongoDB connected');
+
+    // Run seeds on startup
+    const seedOrganizations = require('./scripts/seedOrganizations');
+    const seedTemplates = require('./scripts/seedTemplates');
+
+    await seedOrganizations();
+    await seedTemplates();
   } catch (err) {
-    console.error('MongoDB connection error:', err);
+    console.error('Database error:', err);
     process.exit(1);
   }
 }

@@ -1,7 +1,4 @@
-const mongoose = require('mongoose');
 const Template = require('../models/Template');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 // Hardcoded templates from mongo_uri2
 const TEMPLATES = [
@@ -67,28 +64,40 @@ const TEMPLATES = [
     }
 ];
 
-const seed = async () => {
+const seedTemplates = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log("✅ Connected to MongoDB");
-
-        await Template.deleteMany({});
-        console.log("🗑️  Cleared existing templates");
+        const existing = await Template.countDocuments();
+        if (existing > 0) {
+            console.log(`✅ Templates already seeded (${existing} found)`);
+            return;
+        }
 
         const result = await Template.insertMany(TEMPLATES);
-        console.log(`✅ Seeded ${result.length} templates:\n`);
-
-        result.forEach(t => {
-            console.log(`  • ${t.name}`);
-            console.log(`    Type: ${t.type}, Fields: ${t.fields.length}`);
-        });
-
-        console.log("\n✨ Template seeding complete!");
-        process.exit(0);
+        console.log(`✅ Seeded ${result.length} templates:`);
+        result.forEach(t => console.log(`   - ${t.name}`));
     } catch (e) {
-        console.error('❌ Error:', e.message);
-        process.exit(1);
+        console.error('❌ Template seeding error:', e.message);
+        throw e;
     }
 };
 
-seed();
+// Support both direct execution and module import
+if (require.main === module) {
+    const mongoose = require('mongoose');
+    const path = require('path');
+    require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
+    (async () => {
+        try {
+            await mongoose.connect(process.env.MONGO_URI);
+            console.log("Connected to DB.");
+            await seedTemplates();
+            process.exit(0);
+        } catch (e) {
+            console.error(e);
+            process.exit(1);
+        }
+    })();
+}
+
+module.exports = seedTemplates;
