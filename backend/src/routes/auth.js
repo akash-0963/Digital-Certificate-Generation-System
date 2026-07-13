@@ -16,49 +16,52 @@ const ValidOrganization = require('../models/ValidOrganization');
 // REGISTER (ORGANIZATION ONLY)
 // ----------------------------
 router.post('/register', async (req, res) => {
-  let { organizationName, issuerCode, email, password } = req.body;
+  const { organizationName, email, password } = req.body;
 
   try {
-    // 0. Sanitize
-    issuerCode = issuerCode ? issuerCode.trim() : "";
-
-    console.log(`[Register Attempt] Code: '${issuerCode}', Email: '${email}'`);
-
-    // 1. WHITELIST CHECK 🔐 (Case Insensitive)
-    // RegExp with 'i' flag ensures "sun-pune" matches "SUN-PUNE"
-    const isValidOrg = await ValidOrganization.findOne({
-      issuerCode: { $regex: new RegExp(`^${issuerCode}$`, 'i') }
-    });
-
-    if (!isValidOrg) {
-      console.warn(`[Register Failed] Invalid Code: ${issuerCode}`);
-      return res.status(403).json({ message: "Invalid Issuer Code. Please contact admin to whitelist your organization." });
+    // Validate required fields
+    if (!organizationName || !email || !password) {
+      return res.status(400).json({ message: 'Missing required fields: organizationName, email, password' });
     }
-    // Optional: strictly match name too? For now, code is enough key.
 
-    const existing = await User.findOne({
-      $or: [{ email }, { issuerCode }]
-    });
+    console.log(`[Register Attempt] Organization: '${organizationName}', Email: '${email}'`);
 
+    // Check if email already exists
+    const existing = await User.findOne({ email });
     if (existing) {
-      if (existing.email === email) return res.status(400).json({ message: 'Email already exists' });
-      if (existing.issuerCode === issuerCode) return res.status(400).json({ message: 'Issuer Code already exists' });
+      return res.status(400).json({ message: 'Email already exists' });
     }
+
+    // Auto-generate issuer code from organization name
+    const baseCode = organizationName.toUpperCase().replace(/\s+/g, '-').substring(0, 10);
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const issuerCode = `${baseCode}-${randomSuffix}`;
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Create organization record
+    const Organization = require('../models/Organization');
+    const org = await Organization.create({
+      name: organizationName,
+      issuerCode: issuerCode
+    });
+
+    // Create user with organization reference
     const u = await User.create({
-      organizationName,
-      issuerCode,
+      organizationName: organizationName,
+      issuerCode: issuerCode,
       email,
       passwordHash,
+      organizationId: org._id,
       role: 'organization',
-      verified: false // Require admin approval or email verification implementation later? For now default false or true depending on reqs. User said "Verified flag". let's keep false.
+      verified: false
     });
+
+    console.log(`[Register Success] Organization: '${organizationName}', Code: '${issuerCode}'`);
 
     res.json({
       message: 'Organization registered successfully',
-      user: { id: u._id, email: u.email, organizationName: u.organizationName, issuerCode: u.issuerCode }
+      user: { id: u._id, email: u.email, organizationName: u.organizationName, issuerCode: u.issuerCode, organizationId: org._id }
     });
   } catch (err) {
     console.error(err);
