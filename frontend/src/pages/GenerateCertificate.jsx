@@ -111,11 +111,11 @@ export default function GenerateCertificate() {
         return;
       }
 
-      const { order, purchaseId } = res.data;
+      const { order, purchaseId, keyId } = res.data;
       setPurchaseId(purchaseId);
 
       new window.Razorpay({
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: keyId,
         amount: order.amount,
         currency: "INR",
         order_id: order.id,
